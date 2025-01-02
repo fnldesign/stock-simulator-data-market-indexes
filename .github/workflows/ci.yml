@@ -68,6 +68,11 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
+    - name: Fetch all history and tags
+      run: git fetch --tags --force
+
+    
+
     # 2. Configurar Python
     - name: Set up Python
       uses: actions/setup-python@v4
@@ -78,6 +83,7 @@ jobs:
     - name: Install dependencies
       run: |
         pip install poetry
+        poetry self add poetry-dynamic-versioning
         poetry install
 
     # 4. Build do pacote
