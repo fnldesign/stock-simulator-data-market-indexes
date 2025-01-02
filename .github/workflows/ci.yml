@@ -96,7 +96,10 @@ jobs:
           echo "Token is set."
         fi
 
-      # 5. Publicar no PyPI
+    # 5. Publish to PyPI
     - name: Publish to PyPI
+      env:
+        POETRY_PYPI_TOKEN_PYPI: ${{ vars.POETRY_PYPI_TOKEN_PYPI }}
       run: |
+        poetry config pypi-token.pypi $POETRY_PYPI_TOKEN_PYPI
         poetry publish --build --repository pypi
