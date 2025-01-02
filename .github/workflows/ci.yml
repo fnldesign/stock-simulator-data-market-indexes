@@ -100,4 +100,4 @@ jobs:
     - name: Publish to PyPI
       env:
         POETRY_PYPI_TOKEN_PYPI: ${{ vars.POETRY_PYPI_TOKEN_PYPI }}
-      run: poetry publish
+      run: poetry publish --build
