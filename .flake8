@@ -1,0 +1,20 @@
+[flake8]
+indent-size = 3
+tabs = yes
+
+ignore =
+    E501
+    E111
+    E114
+
+exclude =
+    __init__.py
+    .git,
+    __pycache__,
+    build,
+    dist
+    notbooks
+    data
+    .env
+    tests
+    TestIbovWebScrapper.py
