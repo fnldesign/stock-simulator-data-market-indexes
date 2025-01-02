@@ -1,0 +1,8 @@
+[run]
+omit =
+    */__init__.py
+    */tests/*
+    */TestIbovWebScrapper.py
+    */notbooks/*
+    */data/*
+    */.env/*
