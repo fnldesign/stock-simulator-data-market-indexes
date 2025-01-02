@@ -84,6 +84,11 @@ jobs:
     - name: Build package
       run: poetry build
 
+    - name: Get Poetry Version
+      run: |
+        VERSION=$(poetry version | awk '{print $2}')
+        echo "Current version: $VERSION"  
+    
     #- name: Print PYPI Token to Debug Process
     #  run: echo "POETRY_PYPI_TOKEN_PYPI=${{ vars.POETRY_PYPI_TOKEN_PYPI }}" 
     
@@ -96,8 +101,19 @@ jobs:
           echo "Token is set."
         fi
 
+    - name: Check if PyPI version exists
+      run: |
+          VERSION=$(poetry version --short)
+          echo "Checking if version $VERSION exists on PyPI..."
+          if curl -s https://pypi.org/project/data-market-index-fetcher/$VERSION/ | grep "Not Found"; then
+            echo "Version $VERSION is available for publishing."
+          else
+            echo "Version $VERSION already exists on PyPI. Increment the version."
+            exit 1
+          fi
+          
     # 5. Publish to PyPI
     - name: Publish to PyPI
       env:
         POETRY_PYPI_TOKEN_PYPI: ${{ vars.POETRY_PYPI_TOKEN_PYPI }}
-      run: poetry publish --build
+      run: poetry publish
