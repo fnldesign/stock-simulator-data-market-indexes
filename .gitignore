@@ -227,3 +227,8 @@ venv.bak/
 *.tmp
 *.temp
 *.log
+
+
+# Ignore Data Dev Files
+src/data_market_index_fetcher/indexes/ibov/data/*
+src/data_market_index_fetcher/indexes/ibov/data

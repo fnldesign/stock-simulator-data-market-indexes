@@ -2,8 +2,11 @@
 import pandas as pd
 import numpy as np
 import os
+from pathlib import Path
 import datetime
 from typing import Optional
+from enum import Enum
+from typing import Union
 
 # Selenium
 from selenium.webdriver.common.by import By
@@ -18,18 +21,27 @@ from data_market_index_fetcher.indexes.ibov.utils.WebDriverUtil import WebDriver
 from data_market_index_fetcher.indexes.ibov.utils.LoggerUtil import LoggerUtil
 from data_market_index_fetcher.indexes.ibov.utils.SeleniumUtil import SelenimUtil
 
+class Periodicity(Enum):
+    DAILY = "daily"
+    WEEKLY = "weekly"
+    MONTHLY = "monthly"
+    QUARTERLY = "quarterly"
+    SEMESTRAL = "semestral"
+    ANNUAL = "annual"
+
 class IBovWebScrapperB3:
 
   # Configurar o logger para esta classe usando LoggerUtil
   logger = LoggerUtil.get_logger("IBovWebScrapper")
 
   # Configurações
-  data_path = './data'
-  data_file = data_path + '/ibovespa_diario.csv'
+  #data_path = Path('./data')
+  
   url_webscraping='https://www.b3.com.br/pt_br/market-data-e-indices/indices/indices-amplos/indice-ibovespa-ibovespa-estatisticas-historicas.htm'
   iframe_webscrapting='bvmf_iframe'
 
-  def __init__(self):
+  
+  def __init__(self, data_path: Optional[str] = None):
       """
       Inicializa o WebScrapper do Ibovespa.
       """
@@ -37,6 +49,22 @@ class IBovWebScrapperB3:
       self.driver=None
       self.last_date=None
 
+      if data_path is None:
+          self.logger.info('Data Path is not defined. Using default.')
+
+      # Use the provided path or default to the environment variable or './data'
+      self.data_path = Path(data_path or os.getenv('DATA_PATH', './data')).resolve()
+      
+      # Ensure the directory exists  
+      if not os.path.exists(self.data_path):  
+        self.data_path.mkdir(parents=True, exist_ok=True)  
+      
+      self.logger.info(f'Initializing Data Path with {self.data_path}')
+  
+      #self.data_file = self.data_path + '/ibovespa_diario.csv'
+      self.data_file = os.path.join(self.data_path, 'ibovespa_diario.csv')      
+      self.logger.info(f'Initializing Data File with {self.data_file}')
+  
       self.logger.info("Inicializando o WebScrapper do Ibovespa...")
       self.driver=WebDriverUtil.obter_driver()
 
@@ -333,7 +361,19 @@ class IBovWebScrapperB3:
                                 parse_dates=['date'],
                                 dtype={'value': 'float64'})
       
-  def fetch_data(self, start_date: str, end_date: str) -> pd.DataFrame:
+  def fetch_data(self, start_date: str, end_date: str, periodicity: Union[Periodicity, str] = Periodicity.DAILY) -> pd.DataFrame:
+      """
+        Fetch data between start_date and end_date, aggregated by periodicity.
+
+        Args:
+            start_date (str): Start date in "YYYY-MM-DD" format.
+            end_date (str): End date in "YYYY-MM-DD" format.
+            periodicity (str): Aggregation periodicity, one of ["daily", "monthly", "quarterly", "semiannual", "annual"].
+
+        Returns:
+            pd.DataFrame: Filtered and aggregated data.
+      """
+    
       try:
         # Valida e converte as datas
         if not isinstance(start_date, str) or not isinstance(end_date, str):
@@ -349,6 +389,12 @@ class IBovWebScrapperB3:
         else:
             raise ValueError('Data Final invalida')
 
+        if isinstance(periodicity, str):
+          periodicity = Periodicity(periodicity)  # Convert string to Enum if passed as string
+
+        # Validate periodicity
+        if periodicity not in Periodicity:
+          raise ValueError(f"Invalid periodicity: {periodicity}")
 
         # Carrega / Atualiza os dados caso a data final seja maior que 
         # a ultima data carregada
@@ -376,7 +422,70 @@ class IBovWebScrapperB3:
         
         # Filtrar os dados pelo intervalo de datas
         df_filtrado = self.data[(self.data['date'] >= pd.to_datetime(start_date)) & (self.data['date'] <= pd.to_datetime(end_date))]
+        
+        # Apply periodicity
+        if periodicity != "daily":
+            self.logger.info(f"Aggregating data with periodicity: {periodicity}")
+            df_filtrado = self.aggregate_by_periodicity(df_filtrado, periodicity)
+
+
         return df_filtrado
       
       except Exception as e:
-          self.logger.exception('Erro ao obter os dados do ibov', e)    
+          self.logger.exception('Erro ao obter os dados do ibov', e)
+
+  def is_valid_periodicity(self, periodicity: str, valid_periodicities: dict) -> bool:
+        """
+            Validate if the given periodicity is valid.
+
+            Args:
+                periodicity (str): Periodicity to validate.
+                valid_periodicities (dict): Mapping of valid periodicities.
+
+            Returns:
+                bool: True if valid, False otherwise.
+        """
+
+        return periodicity in valid_periodicities
+
+  def aggregate_by_periodicity(self, df: pd.DataFrame, periodicity: str) -> pd.DataFrame:
+        """
+        Aggregate data based on the given periodicity.
+    
+        Args:
+            df (pd.DataFrame): Data to aggregate.
+            periodicity (str): Aggregation periodicity.
+    
+        Returns:
+            pd.DataFrame: Aggregated data.
+        """
+        try:
+            # Ensure the DataFrame is indexed by 'date'
+            if 'date' not in df.columns:
+                raise ValueError("DataFrame must have a 'date' column")
+    
+            df = df.set_index('date')
+
+            periodicity_mapping = {
+                Periodicity.DAILY: "D",
+                Periodicity.WEEKLY: "W",
+                Periodicity.MONTHLY: "ME",
+                Periodicity.QUARTERLY: "Q",
+                Periodicity.SEMESTRAL: "2Q",
+                Periodicity.ANNUAL: "YE"
+            }
+    
+            #if not self.is_valid_periodicity(periodicity, periodicity_mapping):
+            #    raise ValueError(f"Invalid periodicity: {periodicity}")
+    
+            # Resample and aggregate using the last value
+            resample_rule = periodicity_mapping[periodicity]
+            df_aggregated = df.resample(resample_rule).agg({
+                "value": "last"  # Use the last value of the period
+            }).reset_index()
+    
+            return df_aggregated
+    
+        except Exception as e:
+            self.logger.exception("Error aggregating data by periodicity", exc_info=e)
+            return pd.DataFrame()
