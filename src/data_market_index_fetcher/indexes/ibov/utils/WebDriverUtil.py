@@ -4,7 +4,7 @@ from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.remote.webdriver import WebDriver as SeleniumWebDriver
 from webdriver_manager.chrome import ChromeDriverManager
-from data_market_index_fetcher.indexes.ibov.utils.LoggerUtil import LoggerUtil  # Importar o LoggerUtil
+from utils.LoggerUtil import LoggerUtil  # Importar o LoggerUtil
 
 class WebDriverUtil:
     """
@@ -99,7 +99,7 @@ class WebDriverUtil:
             SeleniumWebDriver: Instância do WebDriver configurada.
         """
         try:
-            WebDriverUtil.logger.info("Tentando obter o WebDriver para Chrome.")
+            WebDriverUtil.logger.info(f"Tentando obter o WebDriver para Chrome. Caminho {caminho_chromedriver}")
             driver = WebDriverUtil.configurar_driver_para_chrome(driver_path=caminho_chromedriver)
             WebDriverUtil.logger.info("WebDriver obtido com sucesso.")
             return driver
