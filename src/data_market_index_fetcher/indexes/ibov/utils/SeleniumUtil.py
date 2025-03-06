@@ -3,7 +3,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
-from data_market_index_fetcher.indexes.ibov.utils.LoggerUtil import LoggerUtil # Importar a classe utilitária de log
+from utils.LoggerUtil import LoggerUtil # Importar a classe utilitária de log
 
 class SelenimUtil:
     """

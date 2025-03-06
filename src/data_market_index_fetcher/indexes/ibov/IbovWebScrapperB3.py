@@ -16,10 +16,11 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException
 
 # Bibliotecas do Projeto
-from data_market_index_fetcher.indexes.ibov.utils.DateUtil import DateUtil
-from data_market_index_fetcher.indexes.ibov.utils.WebDriverUtil import WebDriverUtil
-from data_market_index_fetcher.indexes.ibov.utils.LoggerUtil import LoggerUtil
-from data_market_index_fetcher.indexes.ibov.utils.SeleniumUtil import SelenimUtil
+from utils.DateUtil import DateUtil
+from utils.WebDriverUtil import WebDriverUtil
+from utils.LoggerUtil import LoggerUtil
+from utils.SeleniumUtil import SelenimUtil
+
 
 class Periodicity(Enum):
     DAILY = "daily"
@@ -433,6 +434,7 @@ class IBovWebScrapperB3:
       
       except Exception as e:
           self.logger.exception('Erro ao obter os dados do ibov', e)
+          raise(e)
 
   def is_valid_periodicity(self, periodicity: str, valid_periodicities: dict) -> bool:
         """
